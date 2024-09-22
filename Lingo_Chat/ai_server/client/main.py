@@ -51,8 +51,8 @@ async def process_message():
                 # 1. 메세지 수신
                 message = result[1]
                 message = eval(message.decode('utf-8'))
-                chat_room_id, user_message = message['chat_room_id'], message['user_message']
-                user_id = message['user_id']
+                chat_room_id, user_message, user_id = message['chat_room_id'], message['user_message'], message['user_id']
+                selected_persona = message['persona']
                 print(f"\n>> chat_room_id: {chat_room_id}, user_id: {user_id}\n>> user message: {user_message}\n\n")
                 
                 # 2~3. 히스토리 조회 및 변환 -> AIMessages, HumanMessages로 변환
@@ -60,7 +60,8 @@ async def process_message():
                 print(f"\n\n>> chat_history: {chat_history}\n\n")
                 
                 # 4. chatbot 호출
-                response = await call_chat_graph(chat_history, user_message, chat_room_id, user_id)
+                
+                response = await call_chat_graph(selected_persona, chat_history, user_message, chat_room_id, user_id)
                 
                 # 5. redis history 저장 w/ 웹소켓 메세지 전송
                 await save_chat_history(redis_client, chat_room_id, user_id, user_message, response)

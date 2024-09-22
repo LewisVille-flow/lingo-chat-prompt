@@ -216,7 +216,8 @@ async def emit_chat_message(chat_room_id: int,
     return
 
 
-async def call_chat_graph(chat_history: List[Union[HumanMessage, AIMessage]],
+async def call_chat_graph(selected_persona: str,
+                          chat_history: List[Union[HumanMessage, AIMessage]],
                           user_message: str,
                           chat_room_id: int,
                           user_id: str) -> str:
@@ -226,7 +227,8 @@ async def call_chat_graph(chat_history: List[Union[HumanMessage, AIMessage]],
         
         실시간 대화를 위해 async_generator를 사용하며, 생성된 chunk를 async client 으로 전송합니다.
     """
-    response = chat_graph.astream_events({"history": chat_history, "messages": user_message}, config=config, version='v1')    # return: async_generator
+    response = chat_graph.astream_events({"persona": selected_persona, "history": chat_history, "messages": user_message, }, 
+                                         config=config, version='v1')    # return: async_generator
     
     final_response = ""
     async for resp in response:

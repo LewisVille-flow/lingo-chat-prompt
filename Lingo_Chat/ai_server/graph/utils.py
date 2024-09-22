@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from typing import List
+from typing import List, Union, Optional
 from Levenshtein import ratio
 from operator import itemgetter
 from transformers import AutoTokenizer
@@ -17,7 +17,8 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 
 from server.utils import argparse_load_from_yaml
 from configs import (default_system_prompt,
-                     orbit_role_name, orbit_role_description
+                     orbit_role_name, orbit_role_description,
+                     neuroticism_role_name, neuroticism_role_description
 )
 
 load_dotenv()
@@ -63,15 +64,23 @@ gemini_llm = ChatGoogleGenerativeAI(
 ##########
 ### prompt setting
 ##########
-system_prompt = default_system_prompt.format(role_name=orbit_role_name,
-                                             role_description_and_catchphrases=orbit_role_description)
+# system_prompt = default_system_prompt.format(role_name=orbit_role_name,
+#                                              role_description_and_catchphrases=orbit_role_description)
+
+
+system_prompt = {
+    'orbit': default_system_prompt.format(role_name=orbit_role_name,
+                                          role_description_and_catchphrases=orbit_role_description),
+    'neuroticism': default_system_prompt.format(role_name=neuroticism_role_name,
+                                                role_description_and_catchphrases=neuroticism_role_description)
+}
 
 primary_assistant_prompt = ChatPromptTemplate.from_messages([
     # ("system", system_prompt),
     ("placeholder", "{messages}"),
 ])
 persona_search_assistant_prompt = ChatPromptTemplate.from_messages([
-    ("human", system_prompt), # == ("system", system_prompt)
+    ("human", system_prompt['orbit']), # == ("system", system_prompt)
     ("placeholder", "{messages}"),
 ])
 rag_assistant_prompt = PromptTemplate.from_template(
@@ -111,15 +120,27 @@ rag_llm_prompt = (
 )
 
 
-def convert_chat_history_format(item: List) -> List:
+def convert_chat_history_format(chat_history: List[Union[HumanMessage, AIMessage]],
+                                selected_persona: Optional[str]) -> str:
     """
-        [AIMessage(), HumanMessage(), ..] 형태의 데이터를
-        [{'role', 'content'}, {}, ...] 형태로 변환한 뒤, <|...|> 토큰을 붙여 str로 반환
+        1. system prompt append
+        2. [AIMessage(), HumanMessage(), ..] 형태의 데이터를
+           [{'role', 'content'}, {}, ...] 형태로 변환한 뒤, <|...|> 토큰을 붙여 str로 반환합니다.
+        
+        Args:
+            chat_history - [HumanMessage(), AIMessage(), ..] 형태의 대화내역
+            selected_persona - 선택된 페르소나 이름    
+        
+        Return:
+            str - chat format으로 변환된 대화내역
+            ex) '<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\nhi?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\nhow are you?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n'
     """
     result_item = []
-    result_item.append({'role': 'system', 'content': system_prompt})
+    # result_item.append({'role': 'system', 'content': system_prompt})
+    if selected_persona:
+        result_item.append({'role': 'system', 'content': system_prompt[selected_persona]})
     
-    for idx, message in enumerate(item):
+    for idx, message in enumerate(chat_history):
         if type(message) == AIMessage:
             result_item.append({'role': 'assistant', 'content': message.content})
         elif type(message) == HumanMessage:

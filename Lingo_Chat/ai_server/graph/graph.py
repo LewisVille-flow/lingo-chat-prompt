@@ -24,11 +24,13 @@ persona_llms = {'rag_llm': rag_llm,
 ### graph setting
 class State(TypedDict):
     """
-        messages: chatbot chain 로그 적재
+        persona: 선택한 채팅 페르소나
         history: 이전 대화 기록
+        messages: chatbot chain 로그 적재
     """
-    messages: Annotated[list[AnyMessage], add_messages]
+    persona: str
     history: Annotated[list[AnyMessage], add_messages]
+    messages: Annotated[list[AnyMessage], add_messages]
 
 
 def chatbot_search(state: State, config: RunnableConfig):
@@ -100,13 +102,13 @@ async def chatbot_chat(state: State, config: RunnableConfig):
             searched_contents = message.content
             
     if if_searched:
-        result = {'messages': convert_chat_history_format(result),
+        result = {'messages': convert_chat_history_format(result, state['persona']),
                   'context': searched_contents}
         
         response = await rag_llm.ainvoke(result, config)
         if_searched = False
     else:
-        result = {'messages': [convert_chat_history_format(result)]}
+        result = {'messages': [convert_chat_history_format(result, state['persona'])]}
         response = await local_llm.ainvoke(result, config)
     
     # print(f"\n\n >> chatbot_chat final input: \n>> {result}\n>> type: {type(result)}\n\n")    
