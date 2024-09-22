@@ -89,7 +89,7 @@ async def main():
             
             # 메인 추론 함수 비동기 실행
             # refer: https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor
-            tasks = [loop.run_in_executor(executor, start_process_message) for _ in range(4)]
+            tasks = [loop.run_in_executor(executor, start_process_message) for _ in range(1)]
             
             await asio.wait()
             

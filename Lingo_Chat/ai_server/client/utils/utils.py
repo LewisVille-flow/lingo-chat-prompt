@@ -9,7 +9,8 @@ from datetime import datetime
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, AIMessage
 
-from graph import chat_graph, config
+import asyncio
+# from graph import chat_graph, config
 
 
 ##########
@@ -226,19 +227,38 @@ async def call_chat_graph(chat_history: List[Union[HumanMessage, AIMessage]],
         
         실시간 대화를 위해 async_generator를 사용하며, 생성된 chunk를 async client 으로 전송합니다.
     """
-    response = chat_graph.astream_events({"history": chat_history, "messages": user_message}, config=config, version='v1')    # return: async_generator
+    # response = chat_graph.astream_events({"history": chat_history, "messages": user_message}, config=config, version='v1')    # return: async_generator
+    
+    async def async_response_generator(response_text):
+        for line in response_text:
+            await asyncio.sleep(1)  # 네트워크 지연 또는 처리 시간 시뮬레이션
+            yield line
+            
+    response_texts = [
+        {'data': {'chunk': '이것은 테스트 답변입니다(1). '}, 'name': 'ChatOpenAI'},
+        {'data': {'chunk': '이것은 테스트 답변입니다(2).\n\n'}, 'name': 'ChatOpenAI'},
+        {'data': {'chunk': 'stop.\n\n'}, 'name': 'ChatOpenAI'},
+        # {'data': {'chunk': '이것은 테스트 답변입니다(3).'}, 'name': 'ChatOpenAI'},
+        # {'data': {'chunk': '이것은 테스트 답변입니다(4).'}, 'name': 'ChatOpenAI'},
+    ]
+    response = async_response_generator(response_texts)
+    
     
     final_response = ""
     async for resp in response:
         try:
-            chatbot_messages = resp['data']['chunk'].content
+            # test
+            # chatbot_messages = resp['data']['chunk'].content
+            chatbot_messages = resp['data']['chunk']
+            
             if chatbot_messages and resp['name'] == 'ChatOpenAI':
                 # print(f"{chatbot_messages}", end='')
                 
                 await emit_chat_message(chat_room_id, user_id, chatbot_messages, False)
                 final_response += chatbot_messages
-                
-            if resp['name'] == 'ChatOpenAI' and resp['data']['chunk'].response_metadata['finish_reason'].lower() == 'stop':
+            # test    
+            # if resp['name'] == 'ChatOpenAI' and resp['data']['chunk'].response_metadata['finish_reason'].lower() == 'stop':
+            if resp['name'] == 'ChatOpenAI' and resp['data']['chunk'] == 'stop.\n\n':
                 await emit_chat_message(chat_room_id, user_id, "", True)
                 print(f"\n--------------------")
                 print(f">> [Langgraph 생성 최종 답변]: {final_response}\n\n>> [response handler] finished...\n\n")
