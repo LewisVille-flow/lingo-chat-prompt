@@ -1,7 +1,7 @@
 import yaml
 import signal
 
-from pyngrok import ngrok
+# from pyngrok import ngrok
 from configs import AIServerConfig
 
 
@@ -12,7 +12,7 @@ def signal_handler(server_process, ws_server):
     def _signal_handler(sig, frame):
         print('\n\n>>>>>>> SIGINT received, disconnecting vllm and ngrok...\n>>>>>>> Wait for 10 seconds ...\n\n')
         # ngrok.disconnect(public_url)
-        ngrok.kill()
+        # ngrok.kill()
         
         if server_process:
             server_process.terminate()

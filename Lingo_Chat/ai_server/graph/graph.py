@@ -14,7 +14,8 @@ from langchain_core.runnables.base import RunnableSequence
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from .utils import (tools,
-                    persona_search_llm, search_llm, local_llm, rag_llm,
+                    search_llm, local_llm, rag_llm,
+                    get_persona_search_llm,
                     convert_chat_history_format, fix_called_tool_name,)
 
 persona_llms = {'rag_llm': rag_llm,
@@ -65,6 +66,8 @@ def chatbot_search(state: State, config: RunnableConfig):
     if if_searched: # 검색된 결과라면 답변을 페르소나에 맞게 재 생성(요약)
         result = {'messages': state['messages']}
         # print(f"\n>> [chatbot search, searched] invoke message: {result}\n\n")
+        
+        persona_search_llm = get_persona_search_llm(state['persona'])
         return {"messages": [_check_overload_and_get_return(persona_search_llm, result, config)]}
     else:
         result = state['messages']

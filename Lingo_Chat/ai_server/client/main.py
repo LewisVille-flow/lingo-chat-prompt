@@ -52,7 +52,7 @@ async def process_message():
                 message = result[1]
                 message = eval(message.decode('utf-8'))
                 chat_room_id, user_message, user_id = message['chat_room_id'], message['user_message'], message['user_id']
-                selected_persona = message['persona']
+                selected_persona = message.get('persona', 'orbit')
                 print(f"\n>> chat_room_id: {chat_room_id}, user_id: {user_id}\n>> user message: {user_message}\n\n")
                 
                 # 2~3. 히스토리 조회 및 변환 -> AIMessages, HumanMessages로 변환
